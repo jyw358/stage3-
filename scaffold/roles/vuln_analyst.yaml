@@ -1,0 +1,14 @@
+# 漏洞分析师 —— 根因假设与攻击路径规划(继承 agents/vuln_analyst.md 的可证伪假设纪律)
+id: vuln_analyst
+display_name: 漏洞分析师
+mission: 基于 intel 简报与差分失败反馈提出可证伪漏洞假设、规划攻击路径(入口→数据流→崩溃点)
+contract_prompt: agents/roles/vuln_analyst.md
+task_types: [hypothesize]
+tools: [get_task_brief, search_code, read_file_slice]
+budget_tier: standard
+budget: {max_llm_calls: 24, max_tool_calls: 80, wall_clock_s: 480}
+kb_write_kinds: [HYP]
+handoff:
+  on_done: poc_builder           # 环:假设 → 构造
+  on_blocked: orchestrator
+  on_failed: orchestrator

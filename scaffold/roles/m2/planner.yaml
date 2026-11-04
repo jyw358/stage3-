@@ -1,0 +1,19 @@
+# M2 代码审计模块 · 规划型角色(预留骨架,计划 v3.3 §9 S7 接入时启用)
+# 本目录(roles/m2/)不被 agent/roles.py 加载(其 glob 仅顶层 *.yaml)——
+# 预留 = 契约先行;激活 = S7 注册审计工具后在 contract.py 增审计 TaskType,移至 roles/ 顶层。
+id: planner
+display_name: 规划型智能体(代码审计)
+module: audit                        # v3.3 双模块字段;M1 角色隐式 pentest
+status: reserved                     # reserved=不加载;active=加载
+mission: 检测任务分解与调度——按语言/模块/漏洞类别切分检测单元,规划跨函数/跨类/跨文件的多轮链式推理路径,分派 executor 并汇总进度
+contract_prompt: agents/roles/m2/planner.md
+task_types: [audit_plan]             # S7 定稿时对齐 contract.py 审计任务类型枚举
+tools: [get_task_brief, search_code, read_file_slice, kb_query]
+# 审计专用工具(ast_query / sast_scan / taint_trace / cwe_lookup)于 S7 注册后加入
+budget_tier: light
+budget: {max_llm_calls: 10, max_tool_calls: 40, wall_clock_s: 300}
+kb_write_kinds: [NOTE]
+handoff:
+  on_done: executor
+  on_blocked: summarizer            # 受阻→降级收拢,交汇总型出部分结论
+  on_failed: summarizer

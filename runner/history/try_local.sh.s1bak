@@ -1,0 +1,74 @@
+#!/bin/bash
+# try_local.sh <poc_file> [more files...] -- FREE local vul-side oracle.
+# Runs each candidate ONCE against the prebuilt VULNERABLE binary locally
+# (same mount scheme as the scoring image). No official submission, does
+# NOT count against the 25-check budget, ~5-15 s per call, unlimited uses.
+# Prints: RESULT CRASH (+ sanitizer signature) or CLEAN, or TIMEOUT/HANG.
+# Use as the fast inner loop; only locally-crashing candidates are worth
+# a check.py run (official differential verify + submission).
+set -u
+[ $# -ge 1 ] || { echo "usage: try_local.sh <poc_file> [more files...]"; exit 2; }
+TID="${CG_TASK_ID:?CG_TASK_ID not set}"
+exec python3 - "$TID" "$@" <<'PYEOF'
+import atexit
+import os, pathlib, re, shutil, subprocess, sys, tempfile
+sys.path.insert(0, "/home/naco/work/cybergym-agent")
+from plugins.fuzz_local import parse_arvo_script, DEFAULT_DATA_DIR, DEFAULT_RUNNER
+
+tid = sys.argv[1].split(":")[-1]
+files = sys.argv[2:]
+bin_dir = pathlib.Path(DEFAULT_DATA_DIR) / "arvo" / tid / "vul"
+if not (bin_dir / "out").exists():
+    print("NO_LOCAL_BUILD: no prebuilt vul binaries for this task; use check.py")
+    sys.exit(4)
+try:
+    target, asan = parse_arvo_script(bin_dir)
+except Exception as e:
+    print(f"NO_LOCAL_BUILD: cannot parse arvo runner ({e}); use check.py")
+    sys.exit(4)
+
+tmp = pathlib.Path(tempfile.mkdtemp(prefix="trylocal-"))
+atexit.register(lambda: shutil.rmtree(tmp, ignore_errors=True))  # 152 leaked dirs filled / once
+mounted = []
+for i, f in enumerate(files[:8]):
+    p = pathlib.Path(f)
+    if p.is_file():
+        shutil.copyfile(p, tmp / f"in{i}")
+        mounted.append(f"/poc/in{i}")
+if not mounted:
+    print("no readable input files"); sys.exit(2)
+
+inner = (f"env LD_LIBRARY_PATH=/out-libs ASAN_OPTIONS={asan} "
+         f"timeout -s SIGKILL 25 /out/{target} " + " ".join(mounted))
+cmd = ["docker", "run", "--rm",
+       "-v", f"{bin_dir / 'out'}:/out:ro",
+       "-v", f"{bin_dir / 'libs'}:/out-libs:ro",
+       "-v", f"{tmp}:/poc:ro", DEFAULT_RUNNER, "bash", "-c", inner]
+try:
+    r = subprocess.run(cmd, capture_output=True, text=True, timeout=180)
+except subprocess.TimeoutExpired:
+    print("RESULT: TIMEOUT (container unresponsive)"); sys.exit(5)
+out = (r.stdout or "") + (r.stderr or "")
+
+err_lines = [l.strip() for l in out.splitlines()
+             if ("ERROR:" in l and l.startswith("==")) or "SUMMARY:" in l]
+frames = [l.strip() for l in out.splitlines() if re.match(r"\s*#\d+ ", l)][:4]
+hung = r.returncode in (124, 137) or "ERROR: libFuzzer: timeout" in out
+
+print(f"target={target} files={len(mounted)} container_exit={r.returncode}")
+if err_lines or (r.returncode not in (0, 76) and not hung):
+    print("RESULT: CRASH on the VULNERABLE build (local evidence, not official)")
+    for l in err_lines[:3]:
+        print(" ", l)
+    for l in frames:
+        print(" ", l)
+    sys.exit(1)
+elif hung:
+    print("RESULT: TIMEOUT/HANG (25 s kill) -- input may loop or wait on stdin")
+    sys.exit(6)
+else:
+    print("RESULT: CLEAN (vulnerable build survived this input)")
+    print("Either the path is wrong or the trigger condition is unmet: "
+          "adjust fields and retry, or probe reachability with probe_path.sh")
+    sys.exit(0)
+PYEOF

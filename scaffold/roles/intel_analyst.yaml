@@ -1,0 +1,14 @@
+# 情报分析师 —— 任务入口角色:解析描述/提取复现要素/知识库检索(T2.6 轻量库接入后用 kb-query)
+id: intel_analyst
+display_name: 情报分析师
+mission: 漏洞描述解析、复现要素提取(固件版本/ECU型号/协议/触发条件)、知识库检索,产出可疑位置清单与 NOTE 线索
+contract_prompt: agents/roles/intel_analyst.md
+task_types: [locate]
+tools: [get_task_brief, search_code, read_file_slice, kb_query]
+budget_tier: light
+budget: {max_llm_calls: 12, max_tool_calls: 40, wall_clock_s: 240}
+kb_write_kinds: [NOTE]
+handoff:
+  on_done: vuln_analyst          # 环:情报简报 → 假设
+  on_blocked: orchestrator
+  on_failed: orchestrator

@@ -1,0 +1,19 @@
+# M2 代码审计模块 · 领域专家型角色(预留骨架,参数化模板)
+# 激活方式:按漏洞类别实例化 —— 复制本文件为 roles/m2_active/domain_expert_<cwe>.yaml,
+# 替换 vuln_class 与 mission 中的类别参数(示例:CWE-416 UAF / CWE-78 OS 命令注入)。
+id: domain_expert
+display_name: 领域专家型智能体(代码审计)
+module: audit
+status: reserved
+vuln_class: CWE-416                  # 参数化示例:Use-After-Free;实例化时替换
+mission: 针对特定漏洞类别(<vuln_class>)的深度检测——类别专属触发模式、正负样本经验、语义级误报甄别;solo 模式下可独立承担端到端深检(审计方案 10.1③ 双模式)
+contract_prompt: agents/roles/m2/domain_expert.md
+task_types: [audit_detect]
+tools: [get_task_brief, search_code, read_file_slice, kb_query]
+budget_tier: heavy
+budget: {max_llm_calls: 40, max_tool_calls: 300, wall_clock_s: 3600}
+kb_write_kinds: [NOTE, HYP]
+handoff:
+  on_done: reviewer
+  on_blocked: summarizer
+  on_failed: summarizer

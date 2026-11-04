@@ -1,0 +1,17 @@
+# M2 代码审计模块 · 执行型角色(预留骨架)
+id: executor
+display_name: 执行型智能体(代码审计)
+module: audit
+status: reserved
+mission: 按检测单元执行分析——融合 AST 结构/数据流/控制流/知识库案例/自定义规则多维知识,输出带证据依据(变量传播路径+调用关系)的候选发现
+contract_prompt: agents/roles/m2/executor.md
+task_types: [audit_detect]
+tools: [get_task_brief, search_code, read_file_slice, kb_query]
+# S7 后追加: ast_query / sast_scan / taint_trace
+budget_tier: standard
+budget: {max_llm_calls: 30, max_tool_calls: 200, wall_clock_s: 1800}
+kb_write_kinds: [NOTE, HYP]         # HYP=候选发现(待复检);写域与 reviewer 不重叠
+handoff:
+  on_done: reviewer
+  on_blocked: summarizer
+  on_failed: summarizer

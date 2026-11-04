@@ -1,0 +1,16 @@
+# M2 代码审计模块 · 汇总型角色(预留骨架)
+id: summarizer
+display_name: 汇总型智能体(代码审计)
+module: audit
+status: reserved
+mission: 汇总检测结果为结构化报告——漏洞信息/相关代码片段/触发PoC及验证状态/修复建议四要素;重复结果合并;知识沉淀(有效推理路径/误报修正经验回写知识库,审计方案 10.9)
+contract_prompt: agents/roles/m2/summarizer.md
+task_types: [audit_summarize]
+tools: [get_task_brief, kb_query]
+budget_tier: light
+budget: {max_llm_calls: 8, max_tool_calls: 20, wall_clock_s: 300}
+kb_write_kinds: [RPT]
+handoff:
+  on_done: orchestrator             # 收案;增量轮由 orchestrator 重派 planner
+  on_blocked: orchestrator
+  on_failed: orchestrator

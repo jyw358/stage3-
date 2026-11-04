@@ -1,0 +1,14 @@
+# 攻击构造师 —— PoC 编写/编译调试/基于执行反馈的迭代修正(含 FUZZ 种子构造)
+id: poc_builder
+display_name: 攻击构造师
+mission: 按指定假设构造 PoC 候选(输入文件或最小 harness),基于编译日志/运行反馈迭代修正
+contract_prompt: agents/roles/poc_builder.md
+task_types: [construct, fuzz]
+tools: [get_task_brief, search_code, read_file_slice, write_poc, create_exec_task, get_exec_status, get_exec_result]
+budget_tier: heavy
+budget: {max_llm_calls: 40, max_tool_calls: 160, wall_clock_s: 900}
+kb_write_kinds: [ATT]
+handoff:
+  on_done: verifier              # 环:构造 → 差分闸门(独立验证,PoC 作者永不自证)
+  on_blocked: orchestrator
+  on_failed: orchestrator

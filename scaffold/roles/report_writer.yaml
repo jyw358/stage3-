@@ -1,0 +1,14 @@
+# 报告撰写员 —— 演示用自定义角色(custom):现场改 YAML 即可新增角色的示范
+# P3 之前不接入流水线;P3 T3.5 报告导出可复用此角色(四要素+A/B/C 分级)
+id: report_writer
+display_name: 报告撰写员
+mission: 只读已结案 kb,按"四要素+成功判据+影响验证+A/B/C 分级"撰写漏洞报告(HTML/MD/JSON)
+contract_prompt: agents/roles/report_writer.md
+custom: true
+task_types: []
+tools: [get_task_brief, read_file_slice]   # 自定义角色只读;报告文件走 RPT 记录
+budget_tier: light
+budget: {max_llm_calls: 10, max_tool_calls: 30, wall_clock_s: 300}
+kb_write_kinds: [RPT]
+handoff:
+  on_done: end

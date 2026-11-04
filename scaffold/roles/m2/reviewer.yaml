@@ -1,0 +1,18 @@
+# M2 代码审计模块 · 审查型角色(预留骨架)
+# 边界:reviewer = LLM 交叉复检(审计方案 10.5① 多Agent独立复检/置信度仲裁);
+#      不同于 M1 verifier —— 那是系统差分验证角色(diff_verifier,非 LLM)。
+id: reviewer
+display_name: 审查型智能体(代码审计)
+module: audit
+status: reserved
+mission: 对 executor 的候选发现做独立复检——静态结构化信息比对、上下文合理性判定、置信度评分与仲裁;未过闸的发现标注验证状态,绝不将未验证表述为已确认
+contract_prompt: agents/roles/m2/reviewer.md
+task_types: [audit_review]
+tools: [get_task_brief, search_code, read_file_slice, kb_query]
+budget_tier: standard
+budget: {max_llm_calls: 20, max_tool_calls: 120, wall_clock_s: 1200}
+kb_write_kinds: [VERDICT]           # 复检结论;EVI 由差分验证系统写
+handoff:
+  on_done: summarizer
+  on_blocked: summarizer
+  on_failed: summarizer

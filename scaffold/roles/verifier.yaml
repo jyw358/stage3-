@@ -1,0 +1,22 @@
+# 验证工程师 —— 差分验证编排 + 对抗性结案反查(v3.1:吸收绿盟 hypothesis-auditor/closure-auditor)
+# 注意:差分执行本体在系统层(diff_verifier 插件);本角色承担证据归因、失败分类与反查
+id: verifier
+display_name: 验证工程师
+mission: 差分双侧证据归因、失败分类(verdict 封闭词表)、对抗性结案反查(挡"功能成立≠漏洞成立"与"未测假结案")
+contract_prompt: agents/roles/verifier.md
+task_types: []                    # VERIFY 由系统 diff_verifier 执行;本角色为反查/归因位
+tools: [create_exec_task, get_exec_status, get_exec_result]
+budget_tier: audit
+budget: {max_llm_calls: 16, max_tool_calls: 40, wall_clock_s: 360}
+kb_write_kinds: [EVI, VERDICT]
+handoff:
+  on_verified: end
+  on_no_trigger: poc_builder      # retry: 换种子/修输入(NO_TRIGGER→FUZZ)
+  on_wrong_bug: poc_builder
+  on_compile_error: poc_builder
+  on_timeout: poc_builder
+  on_flaky: poc_builder
+  on_fix_also_triggers: vuln_analyst   # 两侧都崩=假设错位 → 新假设
+  on_inconclusive: orchestrator
+  on_blocked: orchestrator
+adversarial_closure_audit: true
